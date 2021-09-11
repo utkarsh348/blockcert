@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:path/path.dart';
 import 'package:flutter/material.dart';
-
+import 'package:async/async.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert' as convert;
 import 'package:flutter/foundation.dart';
@@ -150,19 +150,19 @@ class addCert extends StatefulWidget {
 class _addCertState extends State<addCert> {
 
   createPost(String title, String key) async {
-    debugPrint(key);
-    var url = 'http://localhost:8080/new_cert';
-    var req = http.MultipartRequest('POST', Uri.parse(url));
+    var request = http.MultipartRequest("POST", Uri.parse("http://localhost:8080/new_cert"));
+   //add text fields
+   request.fields["PrivateKey"] = key;
+   final file = File(title);
+   //create multipart using filepath, string or bytes
+   var pic = await http.MultipartFile.fromPath("file_field", file.path);
+   //add multipart to request
+   var response = await request.send();
 
-    req.files.add(
-    http.MultipartFile.fromBytes(
-      'picture',
-      File(title).readAsBytesSync(),
-      filename: title.split("/").last
-    )
-  );
-  req.fields['PrivateKey'] = key;
-  var res = await req.send();
+   //Get the response from the server
+   var responseData = await response.stream.toBytes();
+   var responseString = String.fromCharCodes(responseData);
+   print(responseString);
 }
 
   
