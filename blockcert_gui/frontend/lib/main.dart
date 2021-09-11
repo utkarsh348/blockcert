@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
 import 'package:http/http.dart' as http;
 import 'dart:convert' as convert;
+import 'package:flutter/foundation.dart';
 
 final bool enableInteractiveSelection = true;
 void main() {
@@ -89,108 +91,6 @@ class _MyAppState extends State<MyApp> {
 }
 
 
-
-class addCert extends StatefulWidget {
-  const addCert({ Key? key }) : super(key: key);
-
-  @override
-  _addCertState createState() => _addCertState();
-}
-
-class _addCertState extends State<addCert> {
-
-  Future<Text> createPost(String title, String key) async {
-  final response = await http.post(
-    Uri.parse("http://localhost:8080/new_cert"),
-    headers: <String, String>{
-      'Content-Type': "multipart/form-data;charset=utf-8; boundary=----WebKitFormBoundaryyrV7KO0BoCBuDbTL",
-    },
-    body: convert.jsonEncode(<String, String>{
-      'Data': title,
-      "PrivateKey" : key
-    }
-    ),
-  );
-
-  if (response.statusCode == 201) {
-    // If the server did return a 201 CREATED response,
-    // then parse the JSON.
-    return Text(convert.jsonDecode(response.body));
-  } else {
-    // If the server did not return a 201 CREATED response,
-    // then throw an exception.
-    throw Exception('Failed to create Certificate'); // error here "multipart: NextPart: EOF"
-  }
-}
-
-  
-  final TextEditingController _controller1 = TextEditingController();
-  final TextEditingController _controller2 = TextEditingController();
-  Future<Text>? _futureres;
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: const Text('Create Data Example'),
-        ),
-        body: Container(
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(8.0),
-          child: (_futureres == null) ? buildColumn() : buildFutureBuilder(),
-        ),
-      );
-  }
-  Column buildColumn() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        TextField(
-          controller: _controller1,
-          decoration: const InputDecoration(hintText: 'Enter File Name'),
-        ),
-        TextField(
-          controller: _controller2,
-          decoration: const InputDecoration(hintText: 'Enter private key'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            setState(() {
-              _futureres = createPost(_controller1.text,_controller2.text);
-            });
-          },
-          child: const Text('Create Data'),
-        ),
-      ],
-    );
-  }
-
-  FutureBuilder<Text> buildFutureBuilder() {
-    return FutureBuilder<Text>(
-      future: _futureres,
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          return Text(snapshot.data!.toString());
-        } else if (snapshot.hasError) {
-          return Text('${snapshot.error}');
-        }
-
-        return const CircularProgressIndicator();
-      },
-    );
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-
 class verify extends StatefulWidget {
   const verify({ Key? key }) : super(key: key);
 
@@ -237,3 +137,93 @@ class _verifyState extends State<verify> {
     );
   }
 }
+
+
+
+class addCert extends StatefulWidget {
+  const addCert({ Key? key }) : super(key: key);
+
+  @override
+  _addCertState createState() => _addCertState();
+}
+
+class _addCertState extends State<addCert> {
+
+  createPost(String title, String key) async {
+    debugPrint(key);
+    var url = 'http://localhost:8080/new_cert';
+    var req = http.MultipartRequest('POST', Uri.parse(url));
+
+    req.files.add(
+    http.MultipartFile.fromBytes(
+      'picture',
+      File(title).readAsBytesSync(),
+      filename: title.split("/").last
+    )
+  );
+  req.fields['PrivateKey'] = key;
+  var res = await req.send();
+}
+
+  
+  final TextEditingController _controller1 = TextEditingController();
+  final TextEditingController _controller2 = TextEditingController();
+  Future<Text>? _futureres;
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: const Text('Create Data Example'),
+        ),
+        body: Container(
+          alignment: Alignment.center,
+          padding: const EdgeInsets.all(8.0),
+          child: (_futureres == null) ? buildColumn() : buildFutureBuilder(),
+        ),
+      );
+  }
+  Column buildColumn() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        TextField(
+          controller: _controller1,
+          decoration: const InputDecoration(hintText: 'Enter File Name'),
+        ),
+        TextField(
+          controller: _controller2,
+          decoration: const InputDecoration(hintText: 'Enter private key'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            setState(() {
+              createPost(_controller1.text,_controller2.text);
+            });
+              
+            
+          },
+          child: const Text('Create Data'),
+        ),
+      ],
+    );
+  }
+
+  FutureBuilder<Text> buildFutureBuilder() {
+    return FutureBuilder<Text>(
+      future: _futureres,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return Text(snapshot.data!.toString());
+        } else if (snapshot.hasError) {
+          return Text('${snapshot.error}');
+        }
+
+        return const CircularProgressIndicator();
+      },
+    );
+  }
+}
+
+
+
+
